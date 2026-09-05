@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /handles/{handle} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /tweets/{tweetId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.authorUid == request.auth.uid;
+      allow update: if request.auth != null; // to allow incrementing counts
+      allow delete: if request.auth != null && resource.data.authorUid == request.auth.uid;
+    }
+    match /likes/{likeId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == likeId.split('_')[0];
+    }
+    match /saves/{saveId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == saveId.split('_')[0];
+    }
+    match /reposts/{repostId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == repostId.split('_')[0];
+    }
+    match /follows/{followId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == followId.split('_')[0];
+    }
+  }
+}
