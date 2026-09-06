@@ -10,6 +10,21 @@ export interface UserProfile {
   pronouns: 'he/him' | 'she/her' | 'they/them' | 'custom';
   customPronouns?: string;
   createdAt: number;
+  bio?: string;
+  displayNameUpdatedAt?: number;
+  handleUpdatedAt?: number;
+  customization?: {
+    usernameColor?: {
+      type: 'solid' | 'glow' | 'gradient';
+      value: string;
+    };
+    profileBorder?: {
+      type: 'solid' | 'glow' | 'dotted' | 'effect';
+      color?: string;
+      thickness?: number;
+      effectId?: string;
+    };
+  };
 }
 
 export interface Tweet {

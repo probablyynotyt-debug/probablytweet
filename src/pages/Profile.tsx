@@ -12,6 +12,10 @@ import { UserProfile } from '../types';
 import { ArrowLeft, Calendar, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 
+import { EditProfileModal } from '../components/EditProfileModal';
+import { CustomizeProfileModal } from '../components/CustomizeProfileModal';
+import { BioRenderer } from '../components/BioRenderer';
+
 export const Profile = () => {
   const { handle } = useParams<{ handle: string }>();
   const { currentUser, userProfile: myProfile, refreshProfile } = useAuth();
@@ -21,6 +25,8 @@ export const Profile = () => {
   const [activeTab, setActiveTab] = useState<TabType>('posts');
   
   const [imageModal, setImageModal] = useState<{isOpen: boolean, field: 'photoURL' | 'bannerURL'}>({ isOpen: false, field: 'photoURL' });
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [customizeModalOpen, setCustomizeModalOpen] = useState(false);
   
   // Actually handle here is the string from URL
   const { tweets, loading: loadingTweets, deleteTweet, addReply } = useTweets(handle, activeTab);
@@ -67,6 +73,36 @@ export const Profile = () => {
   }, [handle, currentUser]);
 
   const isMyProfile = currentUser?.uid === profile?.uid;
+
+  const getUsernameStyle = () => {
+    if (!profile?.customization?.usernameColor) return {};
+    const uc = profile.customization.usernameColor;
+    if (uc.type === 'solid') return { color: uc.value };
+    if (uc.type === 'glow') return { color: uc.value, textShadow: `0 0 10px ${uc.value}` };
+    if (uc.type === 'gradient') return { background: uc.value, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' };
+    return {};
+  };
+
+  const getAvatarBorderStyle = () => {
+    if (!profile?.customization?.profileBorder) return { border: '4px solid #121216' };
+    const pb = profile.customization.profileBorder;
+    if (pb.type === 'effect') {
+      if (pb.effectId === 'rainbow') {
+        return { padding: '4px', background: 'linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)', borderRadius: '9999px' };
+      }
+      return { border: '4px solid #121216' };
+    }
+    const thickness = pb.thickness || 4;
+    const color = pb.color || '#121216';
+    const borderStyle = pb.type === 'dotted' ? 'dotted' : 'solid';
+    const shadow = pb.type === 'glow' ? `0 0 15px ${color}` : 'none';
+    return {
+      border: `${thickness}px ${borderStyle} ${color}`,
+      boxShadow: shadow
+    };
+  };
+
+  const isSepia = profile?.customization?.profileBorder?.type === 'effect' && profile?.customization?.profileBorder?.effectId === 'sepia';
 
   const toggleFollow = async () => {
     if (!currentUser || !profile) return;
@@ -133,7 +169,7 @@ export const Profile = () => {
         </div>
 
         {/* Center Column */}
-        <main className="flex-1 min-w-0 border-x border-zinc-800/80 min-h-screen bg-[#121216] max-w-[600px] w-full">
+        <main className={`flex-1 min-w-0 border-x border-zinc-800/80 min-h-screen bg-[#121216] max-w-[600px] w-full ${isSepia ? 'sepia' : ''}`}>
           {loadingProfile ? (
             <div className="p-8 text-center text-zinc-500">Loading profile...</div>
           ) : !profile ? (
@@ -170,20 +206,45 @@ export const Profile = () => {
               <div className="px-4 pb-4">
                 <div className="flex justify-between items-start relative">
                   {/* Avatar */}
-                  <div 
-                    className={`-mt-16 z-10 w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-[#121216] bg-zinc-700 overflow-hidden relative group ${isMyProfile ? 'cursor-pointer' : ''}`}
-                    onClick={() => handleUpdateImageClick('photoURL')}
-                  >
-                    {profile.photoURL ? (
-                      <img src={profile.photoURL} alt={profile.displayName} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl text-white font-bold">
-                        {profile.displayName.charAt(0).toUpperCase()}
+                  <div className="relative -mt-16 z-10">
+                    {profile.customization?.profileBorder?.type === 'effect' && profile.customization?.profileBorder?.effectId === 'rainbow' ? (
+                      <div style={getAvatarBorderStyle()}>
+                        <div 
+                          className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-[#121216] bg-zinc-700 overflow-hidden relative group ${isMyProfile ? 'cursor-pointer' : ''}`}
+                          onClick={() => handleUpdateImageClick('photoURL')}
+                        >
+                          {profile.photoURL ? (
+                            <img src={profile.photoURL} alt={profile.displayName} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-4xl text-white font-bold">
+                              {profile.displayName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {isMyProfile && (
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <ImageIcon className="w-6 h-6 text-white" />
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    {isMyProfile && (
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <ImageIcon className="w-6 h-6 text-white" />
+                    ) : (
+                      <div 
+                        className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-zinc-700 overflow-hidden relative group ${isMyProfile ? 'cursor-pointer' : ''}`}
+                        style={getAvatarBorderStyle()}
+                        onClick={() => handleUpdateImageClick('photoURL')}
+                      >
+                        {profile.photoURL ? (
+                          <img src={profile.photoURL} alt={profile.displayName} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-4xl text-white font-bold">
+                            {profile.displayName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        {isMyProfile && (
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <ImageIcon className="w-6 h-6 text-white" />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -191,7 +252,10 @@ export const Profile = () => {
                   {/* Actions */}
                   <div className="mt-3">
                     {isMyProfile ? (
-                      <button className="border border-zinc-600 text-white font-bold py-1.5 px-4 rounded-full text-sm hover:bg-zinc-800 transition-colors">
+                      <button 
+                        onClick={() => setEditModalOpen(true)}
+                        className="border border-zinc-600 text-white font-bold py-1.5 px-4 rounded-full text-sm hover:bg-zinc-800 transition-colors"
+                      >
                         Edit profile
                       </button>
                     ) : (
@@ -210,9 +274,15 @@ export const Profile = () => {
                 </div>
 
                 <div className="mt-3">
-                  <h2 className="font-bold text-xl text-zinc-100">{profile.displayName}</h2>
+                  <h2 className="font-bold text-xl text-zinc-100" style={getUsernameStyle()}>{profile.displayName}</h2>
                   <p className="text-sm text-zinc-500">@{profile.handle} · {profile.pronouns === 'custom' ? profile.customPronouns : profile.pronouns}</p>
                 </div>
+
+                {profile.bio && (
+                  <div className="mt-3">
+                    <BioRenderer bio={profile.bio} />
+                  </div>
+                )}
 
                 <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500">
                   <div className="flex items-center gap-1">
@@ -282,6 +352,24 @@ export const Profile = () => {
         onSubmit={handleUpdateImageSubmit} 
         field={imageModal.field} 
       />
+      
+      {profile && isMyProfile && (
+        <>
+          <EditProfileModal
+            isOpen={editModalOpen}
+            onClose={() => setEditModalOpen(false)}
+            profile={profile}
+            onProfileUpdate={setProfile}
+            onOpenCustomize={() => setCustomizeModalOpen(true)}
+          />
+          <CustomizeProfileModal
+            isOpen={customizeModalOpen}
+            onClose={() => setCustomizeModalOpen(false)}
+            profile={profile}
+            onProfileUpdate={setProfile}
+          />
+        </>
+      )}
     </div>
   );
 };
