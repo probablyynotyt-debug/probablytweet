@@ -1,4 +1,9 @@
-import React, { useEffect, useState } from 'react';
+const fs = require('fs');
+let content = fs.readFileSync('src/components/RightSidebar.tsx', 'utf8');
+
+// The replacement duplicated the function definition, let's just do a clean rewrite of RightSidebar.tsx
+
+const fixedContent = `import React, { useEffect, useState } from 'react';
 import { TrendingUp, Globe2, LogOut, Users, BadgeCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { auth, db } from '../lib/firebase';
@@ -41,7 +46,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = () => {
         </div>
         <div className="space-y-4">
           {topUsers.map((user, idx) => (
-            <Link key={user.uid} to={`/${user.handle}`} className="flex items-center gap-3 group">
+            <Link key={user.uid} to={\`/\${user.handle}\`} className="flex items-center gap-3 group">
               <div className="w-10 h-10 rounded-full overflow-hidden bg-zinc-800 shrink-0">
                 {user.photoURL ? (
                   <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
@@ -110,3 +115,5 @@ export const RightSidebar: React.FC<RightSidebarProps> = () => {
     </aside>
   );
 };
+`
+fs.writeFileSync('src/components/RightSidebar.tsx', fixedContent);

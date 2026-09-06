@@ -1,17 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { TrendingUp, Globe2, LogOut, Users, BadgeCheck } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { auth, db } from '../lib/firebase';
-import { signOut } from 'firebase/auth';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { Link } from 'react-router-dom';
-import { UserProfile } from '../types';
+const fs = require('fs');
+let content = fs.readFileSync('src/components/RightSidebar.tsx', 'utf8');
 
-interface RightSidebarProps {
-  onQuickPostTag?: (tag: string) => void;
-}
+content = content.replace(
+  "import { TrendingUp, Globe2, LogOut } from 'lucide-react';",
+  "import { TrendingUp, Globe2, LogOut, Users, BadgeCheck } from 'lucide-react';\nimport { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';\nimport { db } from '../lib/firebase';\nimport { Link } from 'react-router-dom';\nimport { UserProfile } from '../types';"
+);
 
-export const RightSidebar: React.FC<RightSidebarProps> = () => {
+content = content.replace(
+  "import { useState } from 'react';",
+  ""
+);
+
+content = content.replace(
+  "import React from 'react';",
+  "import React, { useEffect, useState } from 'react';"
+);
+
+// We'll just replace the exact exports line, it's safer.
+content = content.replace(
+  "export const RightSidebar: React.FC<RightSidebarProps> = () => {",
+  `export const RightSidebar: React.FC<RightSidebarProps> = () => {
   const { currentUser, openAuthModal } = useAuth();
   const [topUsers, setTopUsers] = useState<UserProfile[]>([]);
 
@@ -26,22 +34,24 @@ export const RightSidebar: React.FC<RightSidebarProps> = () => {
       }
     };
     fetchTopUsers();
-  }, []);
+  }, []);`
+);
 
-  return (
-    <aside className="w-full flex flex-col pt-6 pb-4">
-      <div className="flex items-center gap-3 mb-8 px-2">
-        <span className="text-xl font-bold text-white tracking-tight">Probably Tweet</span>
-      </div>
+content = content.replace(
+  "  const { currentUser, openAuthModal } = useAuth();\n  return (",
+  "  return ("
+);
 
-      <div className="mb-8 bg-[#1c1c24] rounded-2xl border border-zinc-800/80 p-4">
+content = content.replace(
+  /<div className="space-y-1 mb-8">[\s\S]*?<\/div>\s*\{\/\* Info & Auth \*\/\}/,
+  `<div className="mb-8 bg-[#1c1c24] rounded-2xl border border-zinc-800/80 p-4">
         <div className="flex items-center gap-2 mb-4">
           <Users className="w-5 h-5 text-zinc-400" />
           <h2 className="text-sm font-bold text-white">First 5 Members</h2>
         </div>
         <div className="space-y-4">
           {topUsers.map((user, idx) => (
-            <Link key={user.uid} to={`/${user.handle}`} className="flex items-center gap-3 group">
+            <Link key={user.uid} to={\`/\${user.handle}\`} className="flex items-center gap-3 group">
               <div className="w-10 h-10 rounded-full overflow-hidden bg-zinc-800 shrink-0">
                 {user.photoURL ? (
                   <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
@@ -83,30 +93,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = () => {
         )}
       </div>
 
-      {!currentUser && (
-        <div className="border-t border-zinc-800/80 pt-8 px-2">
-          <h2 className="font-bold text-[15px] text-white mb-4 leading-snug">
-            Probably Tweet is the best way to keep up with what's happening.
-          </h2>
-          <p className="text-sm text-zinc-300 mb-6 leading-relaxed">
-            Follow anyone across the Fediverse and see it all in chronological order. No algorithms, ads, or clickbait in sight.
-          </p>
-          <div className="space-y-3">
-            <button 
-              onClick={() => openAuthModal('signup')}
-              className="w-full bg-[#6364ff] hover:bg-[#5253d8] text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
-            >
-              Create account
-            </button>
-            <button 
-              onClick={() => openAuthModal('signin')}
-              className="w-full border border-zinc-700 hover:bg-[#1a1b26] text-zinc-100 font-semibold py-2.5 rounded-lg transition-colors text-sm"
-            >
-              Sign in
-            </button>
-          </div>
-        </div>
-      )}
-    </aside>
-  );
-};
+      {/* Info & Auth */}`
+);
+
+fs.writeFileSync('src/components/RightSidebar.tsx', content);

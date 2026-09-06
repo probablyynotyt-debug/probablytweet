@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { parseHashtags } from '../lib/markdown';
 import { Heart, Repeat, MessageSquare, Bookmark, Share2, Trash2, BadgeCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { TweetComposer } from './TweetComposer';
 import { Tweet } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useInteractions } from '../hooks/useInteractions';
@@ -8,7 +12,7 @@ import { useReplies } from '../hooks/useTweets';
 
 interface TweetCardProps {
   tweet: Tweet;
-  onAddReply?: (id: string, content: string) => void;
+  onAddReply?: (id: string, content: string, mediaUrl?: string, mediaType?: 'image' | 'video' | 'audio', stickerUrl?: string) => void;
   onDelete?: (id: string) => void;
 }
 
@@ -66,7 +70,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
             <div className="flex items-center gap-1.5 flex-wrap">
               <Link to={`/${author?.handle || ''}`} className="font-semibold text-sm text-zinc-100 hover:underline flex items-center gap-1">
                 {author?.displayName || 'Unknown'}
-                {author?.handle?.toLowerCase() === 'probablynot' && (
+                {(author?.handle?.toLowerCase() === 'probablynot' || author?.handle?.toLowerCase() === 'whydkitten') && (
                   <BadgeCheck className="w-4 h-4 text-[#6364ff]" />
                 )}
               </Link>
@@ -91,9 +95,29 @@ export const TweetCard: React.FC<TweetCardProps> = ({
           </div>
 
           {/* Main Body */}
-          <div className="mt-2 text-zinc-200 text-sm sm:text-base leading-relaxed break-words whitespace-pre-wrap">
-            {tweet.content}
+          <div className="mt-2 text-zinc-200 text-sm sm:text-base leading-relaxed break-words whitespace-pre-wrap markdown-body">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {parseHashtags(tweet.content || '')}
+            </ReactMarkdown>
           </div>
+          {tweet.mediaUrl && (
+            <div className="mt-3 rounded-2xl overflow-hidden border border-zinc-800 bg-[#1c1c24]">
+              {tweet.mediaType === 'image' && (
+                <img src={tweet.mediaUrl} alt="Media" className="w-full h-auto max-h-[500px] object-cover" />
+              )}
+              {tweet.mediaType === 'video' && (
+                <video src={tweet.mediaUrl} controls className="w-full max-h-[500px] object-cover" />
+              )}
+              {tweet.mediaType === 'audio' && (
+                <audio src={tweet.mediaUrl} controls className="w-full mt-2" />
+              )}
+            </div>
+          )}
+          {tweet.stickerUrl && (
+            <div className="mt-2">
+              <img src={tweet.stickerUrl} alt="Sticker" className="w-24 h-24 object-contain drop-shadow-md" />
+            </div>
+          )}
 
           {/* Interaction Bar */}
           <div className="mt-4 flex items-center justify-between text-zinc-400 max-w-md">
@@ -153,22 +177,16 @@ export const TweetCard: React.FC<TweetCardProps> = ({
           {showReplies && (
             <div className="mt-4 pt-3 border-t border-zinc-800/50">
               {currentUser ? (
-                <form onSubmit={submitReply} className="flex gap-2 mb-4">
-                  <input
-                    type="text"
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Post your reply"
-                    className="flex-1 bg-[#1c1c24] border border-zinc-700/50 rounded-full px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-[#6364ff] transition-colors"
+                <div className="mb-4">
+                  <TweetComposer 
+                    onPostTweet={(content, mediaUrl, mediaType, stickerUrl) => {
+                      if (onAddReply) {
+                        onAddReply(tweet.id, content, mediaUrl, mediaType, stickerUrl);
+                        setShowReplies(true);
+                      }
+                    }}
                   />
-                  <button
-                    type="submit"
-                    disabled={!replyText.trim()}
-                    className="bg-[#6364ff] hover:bg-[#5253d8] disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-full text-sm transition-colors"
-                  >
-                    Reply
-                  </button>
-                </form>
+                </div>
               ) : (
                 <div className="text-xs text-zinc-500 mb-4 bg-[#1c1c24] p-3 rounded-lg border border-zinc-800">
                   Sign in to reply to this post.

@@ -38,4 +38,7 @@ export interface Tweet {
   repliesCount: number;
   author?: UserProfile;
   replyTo?: string; // id of the tweet it replies to
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video' | 'audio';
+  stickerUrl?: string;
 }

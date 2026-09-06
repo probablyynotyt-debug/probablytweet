@@ -88,11 +88,14 @@ export function useTweets(handle?: string, tab: TabType = 'posts') {
     };
   }, [handle, tab]);
 
-  const addTweet = async (content: string) => {
+  const addTweet = async (content: string, mediaUrl?: string, mediaType?: 'image' | 'video' | 'audio', stickerUrl?: string) => {
     if (!currentUser) throw new Error('Must be logged in');
     await addDoc(collection(db, 'tweets'), {
       authorUid: currentUser.uid,
       content,
+      mediaUrl: mediaUrl || null,
+      mediaType: mediaType || null,
+      stickerUrl: stickerUrl || null,
       createdAt: Date.now(),
       likesCount: 0,
       repostsCount: 0,
@@ -105,11 +108,14 @@ export function useTweets(handle?: string, tab: TabType = 'posts') {
     await deleteDoc(doc(db, 'tweets', tweetId));
   };
 
-  const addReply = async (tweetId: string, content: string) => {
+  const addReply = async (tweetId: string, content: string, mediaUrl?: string, mediaType?: 'image' | 'video' | 'audio', stickerUrl?: string) => {
     if (!currentUser) throw new Error('Must be logged in');
     await addDoc(collection(db, 'tweets'), {
       authorUid: currentUser.uid,
       content,
+      mediaUrl: mediaUrl || null,
+      mediaType: mediaType || null,
+      stickerUrl: stickerUrl || null,
       createdAt: Date.now(),
       likesCount: 0,
       repostsCount: 0,

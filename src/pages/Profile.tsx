@@ -56,15 +56,6 @@ export const Profile = () => {
         if (userDoc.exists()) {
           const profileData = userDoc.data() as UserProfile;
           
-          // Sync exact counts
-          const followersQuery = query(collection(db, 'follows'), where('followingId', '==', uid));
-          const followersSnapshot = await getCountFromServer(followersQuery);
-          profileData.followersCount = followersSnapshot.data().count;
-
-          const followingQuery = query(collection(db, 'follows'), where('followerId', '==', uid));
-          const followingSnapshot = await getCountFromServer(followingQuery);
-          profileData.followingCount = followingSnapshot.data().count;
-
           if (currentUser) {
             const followDoc = await getDoc(doc(db, 'follows', `${currentUser.uid}_${uid}`));
             profileData.isFollowing = followDoc.exists();
@@ -88,17 +79,21 @@ export const Profile = () => {
     setImageModal({ isOpen: true, field });
   };
 
-  const handleUpdateImageSubmit = async (url: string, field: 'photoURL' | 'bannerURL') => {
+  const handleUpdateImageSubmit = async (file: File) => {
     if (!profile) return;
     try {
+      const { uploadToCloudinary } = await import('../lib/cloudinary');
+      const url = await uploadToCloudinary(file, 'image');
+      const field = imageModal.field;
       const userRef = doc(db, 'users', profile.uid);
       await setDoc(userRef, { [field]: url }, { merge: true });
-      if (myProfile && profile.uid === myProfile.uid) {
-         await refreshProfile();
+      if (myProfile && profile.uid === myProfile.uid) { 
+        await refreshProfile();
       }
       setProfile(prev => prev ? { ...prev, [field]: url } : null);
     } catch (error) {
-      console.error(`Error updating ${field}:`, error);
+      console.error('Error updating image:', error);
+      alert('Failed to upload image. Make sure Cloudinary env vars are set.');
     }
   };
 
@@ -244,7 +239,7 @@ export const Profile = () => {
                 </div>
 
                 <div className="mt-3 flex items-center gap-4 text-sm">
-                  <div className="hover:underline cursor-pointer" onClick={() => setFollowModalOpen({isOpen: true, type: 'followers'})}>
+                  <div className="hover:underline cursor-pointer" onClick={() => setFollowModalOpen({isOpen: true, type: 'following'})}>
                     <span className="font-bold text-white">{profile.followingCount || 0}</span> <span className="text-zinc-500">Following</span>
                   </div>
                   <div className="hover:underline cursor-pointer" onClick={() => setFollowModalOpen({isOpen: true, type: 'followers'})}>
@@ -272,7 +267,7 @@ export const Profile = () => {
                       key={tweet.id} 
                       tweet={tweet} 
                       onDelete={deleteTweet}
-                      onReply={addReply}
+                      onAddReply={addReply as any}
                     />
                   ))
                 ) : (

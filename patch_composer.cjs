@@ -1,33 +1,31 @@
-import React, { useState } from 'react';
-import { Send, Hash, Image, Video, FileAudio, SmilePlus, X, Loader2 } from 'lucide-react';
-import { uploadToCloudinary } from '../lib/cloudinary';
-import { StickerPicker } from './StickerPicker';
-import { useAuth } from '../contexts/AuthContext';
+const fs = require('fs');
+let content = fs.readFileSync('src/components/TweetComposer.tsx', 'utf8');
 
-interface TweetComposerProps {
-  onPostTweet: (content: string, mediaUrl?: string, mediaType?: 'image' | 'video' | 'audio', stickerUrl?: string) => void;
-  onClose?: () => void;
-  isModal?: boolean;
-}
+content = content.replace(
+  "import { Send, Hash } from 'lucide-react';",
+  "import { Send, Hash, Image, Video, FileAudio, SmilePlus, X, Loader2 } from 'lucide-react';\nimport { uploadToCloudinary } from '../lib/cloudinary';\nimport { StickerPicker } from './StickerPicker';"
+);
 
-export const TweetComposer: React.FC<TweetComposerProps> = ({
-  onPostTweet,
-  onClose,
-  isModal = false,
-}) => {
-  const [content, setContent] = useState('');
-  const [selectedTag, setSelectedTag] = useState('');
-  const { userProfile } = useAuth();
-  const maxChars = 280;
+content = content.replace(
+  "  onPostTweet: (content: string, tag?: string) => void;",
+  "  onPostTweet: (content: string, mediaUrl?: string, mediaType?: 'image' | 'video' | 'audio', stickerUrl?: string) => void;"
+);
+
+content = content.replace(
+  "  const maxChars = 280;",
+  `  const maxChars = 280;
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | 'audio' | null>(null);
   const [stickerUrl, setStickerUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showStickerPicker, setShowStickerPicker] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);`
+);
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+content = content.replace(
+  "  const handleSubmit = (e?: React.FormEvent) => {\n    if (e) e.preventDefault();\n    if (!content.trim()) return;\n    onPostTweet(content.trim(), selectedTag ? selectedTag.replace('#', '') : undefined);\n    setContent('');\n    setSelectedTag('');\n    if (onClose) onClose();\n  };",
+  `  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!content.trim() && !mediaFile && !stickerUrl) return;
     
@@ -82,36 +80,20 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
     setMediaType(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+`
+);
 
+content = content.replace(
+  "disabled={!content.trim() || isOver}",
+  "disabled={(!content.trim() && !mediaFile && !stickerUrl) || isOver || isUploading}"
+);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      handleSubmit();
-    }
-  };
+content = content.replace(
+  "<span>Tweet</span>",
+  "{isUploading ? <span>Posting...</span> : <span>Tweet</span>}"
+);
 
-  const remaining = maxChars - content.length;
-  const isOver = remaining < 0;
-
-  return (
-    <div
-      className={`p-4 sm:p-5 transition-all ${
-        isModal ? 'shadow-2xl bg-[#1c1c24] rounded-2xl border border-zinc-800' : ''
-      }`}
-    >
-      <div className="flex gap-3.5">
-        {/* User Avatar */}
-        <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700/60 flex items-center justify-center shrink-0 font-semibold text-zinc-300 text-sm overflow-hidden">
-          {userProfile?.photoURL ? (
-            <img src={userProfile.photoURL} alt="PFP" className="w-full h-full object-cover" />
-          ) : (
-            userProfile?.displayName?.charAt(0).toUpperCase() || 'You'
-          )}
-        </div>
-
-        {/* Form Body */}
-        <div className="flex-1 min-w-0">
-          
+const mediaPreviewSection = `
           {mediaPreview && (
             <div className="mt-3 relative inline-block max-w-full rounded-2xl overflow-hidden border border-zinc-800 bg-[#1c1c24]">
               {mediaType === 'image' && <img src={mediaPreview} alt="Preview" className="max-h-64 object-contain" />}
@@ -130,19 +112,31 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
               </button>
             </div>
           )}
+`;
 
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={3}
-            placeholder="Tweet whatever you want..."
-            className="w-full bg-transparent text-zinc-100 placeholder-zinc-500 resize-none border-none outline-none text-base leading-relaxed mt-2"
-            autoFocus={isModal}
-          />
+content = content.replace(
+  "<textarea",
+  mediaPreviewSection + "\n          <textarea"
+);
 
-          <div className="flex items-center justify-between mt-4 pt-3 border-t border-zinc-800/80">
-            <div className="flex items-center gap-2 text-zinc-500">
+const oldControls = `<div className="flex items-center gap-2">
+              <span
+                className={\`text-xs font-mono \${
+                  isOver
+                    ? 'text-red-400 font-bold'
+                    : remaining <= 20
+                    ? 'text-amber-400'
+                    : 'text-zinc-500'
+                }\`}
+              >
+                {remaining}
+              </span>
+              <span className="hidden sm:inline text-[11px] text-zinc-600">
+                (Cmd+Enter to send)
+              </span>
+            </div>`;
+
+const newControls = `<div className="flex items-center gap-2 text-zinc-500">
               <input type="file" accept="image/*,video/*,audio/*" hidden ref={fileInputRef} onChange={handleFileChange} />
               <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-zinc-800 rounded-full transition-colors hover:text-[#6364ff]" title="Media">
                 <Image className="w-4 h-4" />
@@ -159,43 +153,18 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
                 )}
               </div>
               <span
-                className={`ml-2 text-xs font-mono ${
+                className={\`ml-2 text-xs font-mono \${
                   isOver
                     ? 'text-red-400 font-bold'
                     : remaining <= 20
                     ? 'text-amber-400'
                     : 'text-zinc-500'
-                }`}
+                }\`}
               >
                 {remaining}
               </span>
-            </div>
+            </div>`;
 
-            <div className="flex items-center gap-2">
-              {isModal && onClose && (
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
-                >
-                  Cancel
-                </button>
-              )}
+content = content.replace(oldControls, newControls);
 
-              <button
-                type="button"
-                onClick={() => handleSubmit()}
-                disabled={(!content.trim() && !mediaFile && !stickerUrl) || isOver || isUploading}
-                className="inline-flex items-center gap-2 bg-[#6364ff] hover:bg-[#5253d8] text-white font-semibold text-xs sm:text-sm px-4 py-1.5 rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {isUploading ? <span>Posting...</span> : <span>Tweet</span>}
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
+fs.writeFileSync('src/components/TweetComposer.tsx', content);
