@@ -39,9 +39,9 @@ export const BioRenderer: React.FC<BioRendererProps> = ({ bio }) => {
             <iframe 
               src={embedUrl} 
               width="100%" 
-              height="80" 
+              height="152" 
               frameBorder="0" 
-              allow="encrypted-media"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               className="rounded-xl border-none"
             ></iframe>
           </div>

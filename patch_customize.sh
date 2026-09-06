@@ -1,3 +1,5 @@
+#!/bin/bash
+cat << 'INNER_EOF' > /tmp/customize_changes.txt
 import React, { useState } from 'react';
 import { X, Lock } from 'lucide-react';
 import { UserProfile } from '../types';
@@ -276,3 +278,5 @@ export const CustomizeProfileModal: React.FC<CustomizeProfileModalProps> = ({ is
     </div>
   );
 };
+INNER_EOF
+cp /tmp/customize_changes.txt src/components/CustomizeProfileModal.tsx

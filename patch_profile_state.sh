@@ -1,3 +1,5 @@
+#!/bin/bash
+cat << 'INNER_EOF' > /tmp/profile_state.txt
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -5,7 +7,7 @@ import { useTweets } from '../hooks/useTweets';
 import { TweetCard } from '../components/TweetCard';
 import { LeftSidebar } from '../components/LeftSidebar';
 import { RightSidebar } from '../components/RightSidebar';
-import { doc, setDoc, deleteDoc, getDoc, writeBatch, increment, collection, query, where, getDocs, limit, getCountFromServer } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { ImageUpdateModal } from '../components/ImageUpdateModal';
 import { ArrowLeft, Calendar, Image as ImageIcon } from 'lucide-react';
@@ -15,7 +17,6 @@ import { UserProfile } from '../types';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { CustomizeProfileModal } from '../components/CustomizeProfileModal';
 import { BioRenderer } from '../components/BioRenderer';
-import { FollowListModal } from '../components/FollowListModal';
 import { getUsernameStyle, getProfileBorderStyle, getProfileEffectClass } from '../lib/customization';
 
 type TabType = 'posts' | 'replies' | 'reposts' | 'likes' | 'saves';
@@ -29,7 +30,6 @@ export const Profile = () => {
   const [imageModal, setImageModal] = useState<{isOpen: boolean, field: 'photoURL' | 'bannerURL'}>({ isOpen: false, field: 'photoURL' });
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [customizeModalOpen, setCustomizeModalOpen] = useState(false);
-  const [followModalOpen, setFollowModalOpen] = useState<{isOpen: boolean, type: 'followers' | 'following'}>({isOpen: false, type: 'followers'});
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -55,16 +55,6 @@ export const Profile = () => {
         
         if (userDoc.exists()) {
           const profileData = userDoc.data() as UserProfile;
-          
-          // Sync exact counts
-          const followersQuery = query(collection(db, 'follows'), where('followingId', '==', uid));
-          const followersSnapshot = await getCountFromServer(followersQuery);
-          profileData.followersCount = followersSnapshot.data().count;
-
-          const followingQuery = query(collection(db, 'follows'), where('followerId', '==', uid));
-          const followingSnapshot = await getCountFromServer(followingQuery);
-          profileData.followingCount = followingSnapshot.data().count;
-
           if (currentUser) {
             const followDoc = await getDoc(doc(db, 'follows', `${currentUser.uid}_${uid}`));
             profileData.isFollowing = followDoc.exists();
@@ -107,25 +97,15 @@ export const Profile = () => {
   const toggleFollow = async () => {
     if (!currentUser || !profile) return;
     const ref = doc(db, 'follows', `${currentUser.uid}_${profile.uid}`);
-    const batch = writeBatch(db);
-    const currentUserRef = doc(db, 'users', currentUser.uid);
-    const profileUserRef = doc(db, 'users', profile.uid);
-
     if (profile.isFollowing) {
-      batch.delete(ref);
-      batch.update(currentUserRef, { followingCount: increment(-1) });
-      batch.update(profileUserRef, { followersCount: increment(-1) });
-      await batch.commit();
+      await deleteDoc(ref);
       setProfile(prev => prev ? { ...prev, isFollowing: false, followersCount: Math.max(0, (prev.followersCount || 0) - 1) } : null);
     } else {
-      batch.set(ref, {
+      await setDoc(ref, {
         followerId: currentUser.uid,
         followingId: profile.uid,
         createdAt: Date.now()
       });
-      batch.update(currentUserRef, { followingCount: increment(1) });
-      batch.update(profileUserRef, { followersCount: increment(1) });
-      await batch.commit();
       setProfile(prev => prev ? { ...prev, isFollowing: true, followersCount: (prev.followersCount || 0) + 1 } : null);
     }
   };
@@ -138,13 +118,11 @@ export const Profile = () => {
   return (
     <div className="flex justify-center w-full">
       <div className="flex w-full max-w-[1280px] min-h-screen">
-                <div className="hidden lg:block w-[280px] xl:w-[320px] shrink-0">
-          <LeftSidebar />
-        </div>
+        <LeftSidebar />
 
         {/* Center Column */}
         <main 
-          className={`flex-1 min-w-0 ${borderClasses} min-h-screen bg-[#121216] max-w-[600px] w-full pb-20 lg:pb-0 relative ${effectClasses}`}
+          className={`flex-1 min-w-0 ${borderClasses} min-h-screen bg-[#121216] max-w-[600px] w-full pb-20 lg:pb-0 ${effectClasses}`}
           style={customBorderStyles}
         >
           {loadingProfile ? (
@@ -157,7 +135,7 @@ export const Profile = () => {
           ) : (
             <>
               {/* Header */}
-              <div className="sticky top-0 z-[60] bg-[#121216]/80 backdrop-blur-md border-b border-zinc-800/80 px-4 py-2 flex items-center gap-6">
+              <div className="sticky top-0 z-50 bg-[#121216]/80 backdrop-blur-md border-b border-zinc-800/80 px-4 py-2 flex items-center gap-6">
                 <Link to="/" className="p-2 hover:bg-zinc-800 rounded-full transition-colors">
                   <ArrowLeft className="w-5 h-5 text-white" />
                 </Link>
@@ -244,10 +222,10 @@ export const Profile = () => {
                 </div>
 
                 <div className="mt-3 flex items-center gap-4 text-sm">
-                  <div className="hover:underline cursor-pointer" onClick={() => setFollowModalOpen({isOpen: true, type: 'followers'})}>
+                  <div className="hover:underline cursor-pointer">
                     <span className="font-bold text-white">{profile.followingCount || 0}</span> <span className="text-zinc-500">Following</span>
                   </div>
-                  <div className="hover:underline cursor-pointer" onClick={() => setFollowModalOpen({isOpen: true, type: 'followers'})}>
+                  <div className="hover:underline cursor-pointer">
                     <span className="font-bold text-white">{profile.followersCount || 0}</span> <span className="text-zinc-500">Followers</span>
                   </div>
                 </div>
@@ -288,12 +266,6 @@ export const Profile = () => {
               </div>
             </>
           )}
-          <FollowListModal
-            isOpen={followModalOpen.isOpen}
-            onClose={() => setFollowModalOpen(prev => ({...prev, isOpen: false}))}
-            userId={profile?.uid || ''}
-            type={followModalOpen.type}
-          />
         </main>
 
         <div className="hidden lg:block w-[350px]">
@@ -328,3 +300,5 @@ export const Profile = () => {
     </div>
   );
 };
+INNER_EOF
+cp /tmp/profile_state.txt src/pages/Profile.tsx

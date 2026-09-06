@@ -1,3 +1,5 @@
+#!/bin/bash
+cat << 'INNER_EOF' > /tmp/types_patch.txt
 export interface UserProfile {
   uid: string;
   email: string;
@@ -39,3 +41,5 @@ export interface Tweet {
   author?: UserProfile;
   replyTo?: string; // id of the tweet it replies to
 }
+INNER_EOF
+cp /tmp/types_patch.txt src/types.ts
