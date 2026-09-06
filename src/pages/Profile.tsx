@@ -234,7 +234,7 @@ export const Profile = () => {
               </div>
 
               {/* Feed Tabs */}
-              <div className="flex items-center px-4 pt-1 border-b border-zinc-800/80 bg-[#121216] overflow-x-auto">
+              <div className="flex items-center px-4 pt-1 border-b border-zinc-800/80 bg-[#121216] overflow-x-auto hide-scrollbar">
                 <button onClick={() => setActiveTab('posts')} className={`px-4 py-3 text-sm font-semibold whitespace-nowrap ${activeTab === 'posts' ? 'text-zinc-200 border-b-2 border-[#6364ff]' : 'text-zinc-500 hover:text-zinc-300'}`}>Posts</button>
                 <button onClick={() => setActiveTab('replies')} className={`px-4 py-3 text-sm font-semibold whitespace-nowrap ${activeTab === 'replies' ? 'text-zinc-200 border-b-2 border-[#6364ff]' : 'text-zinc-500 hover:text-zinc-300'}`}>Replies</button>
                 <button onClick={() => setActiveTab('reposts')} className={`px-4 py-3 text-sm font-semibold whitespace-nowrap ${activeTab === 'reposts' ? 'text-zinc-200 border-b-2 border-[#6364ff]' : 'text-zinc-500 hover:text-zinc-300'}`}>Reposts</button>

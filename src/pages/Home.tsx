@@ -6,12 +6,10 @@ import { RightSidebar } from '../components/RightSidebar';
 import { MessageCircle } from 'lucide-react';
 import { useTweets } from '../hooks/useTweets';
 import { useAuth } from '../contexts/AuthContext';
-import { AuthModals } from '../components/AuthModals';
 
 export const Home = () => {
   const { tweets, loading, addTweet, deleteTweet, addReply } = useTweets();
-  const { currentUser } = useAuth();
-  const [authModal, setAuthModal] = React.useState<{ isOpen: boolean, mode: 'signin' | 'signup' }>({ isOpen: false, mode: 'signin' });
+  const { currentUser, openAuthModal } = useAuth();
 
   return (
     <div className="flex justify-center w-full">
@@ -24,8 +22,9 @@ export const Home = () => {
         {/* Center Column (Feed) */}
         <main className="flex-1 min-w-0 border-x border-zinc-800/80 min-h-screen bg-[#121216] max-w-[600px] w-full">
           {/* Header */}
-          <div className="sticky top-0 z-10 bg-[#121216]/90 backdrop-blur-md border-b border-zinc-800/80 px-4 py-3">
+          <div className="sticky top-0 z-10 bg-[#121216]/90 backdrop-blur-md border-b border-zinc-800/80 px-4 py-3 flex items-center justify-between">
              <div className="font-bold text-lg text-zinc-100">Home</div>
+             <div className="lg:hidden font-bold text-zinc-100 tracking-tight">Probably Tweet</div>
           </div>
 
           {/* Composer */}
@@ -36,7 +35,7 @@ export const Home = () => {
                <div className="p-6 text-center">
                  <h2 className="text-zinc-200 font-bold text-lg mb-2">Join the conversation</h2>
                  <p className="text-zinc-400 text-sm mb-4">You need an account to post, reply, and like.</p>
-                 <button onClick={() => setAuthModal({ isOpen: true, mode: 'signup' })} className="bg-[#6364ff] hover:bg-[#5253d8] text-white font-semibold py-2 px-6 rounded-full transition-colors text-sm">
+                 <button onClick={() => openAuthModal('signup')} className="bg-[#6364ff] hover:bg-[#5253d8] text-white font-semibold py-2 px-6 rounded-full transition-colors text-sm">
                    Create account
                  </button>
                </div>
@@ -44,10 +43,10 @@ export const Home = () => {
           </div>
 
           {/* Feed Tabs */}
-          <div className="flex items-center px-4 pt-1 border-b border-zinc-800/80 bg-[#121216]">
-            <button className="px-4 py-3 text-sm font-semibold text-zinc-200 border-b-2 border-[#6364ff]">Posts</button>
-            <button className="px-4 py-3 text-sm font-medium text-zinc-500 hover:text-zinc-300">Posts and replies</button>
-            <button className="px-4 py-3 text-sm font-medium text-zinc-500 hover:text-zinc-300">Media</button>
+          <div className="flex items-center px-4 pt-1 border-b border-zinc-800/80 bg-[#121216] overflow-x-auto hide-scrollbar">
+            <button className="px-4 py-3 text-sm font-semibold text-zinc-200 border-b-2 border-[#6364ff] whitespace-nowrap">Posts</button>
+            <button className="px-4 py-3 text-sm font-medium text-zinc-500 hover:text-zinc-300 whitespace-nowrap">Posts and replies</button>
+            <button className="px-4 py-3 text-sm font-medium text-zinc-500 hover:text-zinc-300 whitespace-nowrap">Media</button>
           </div>
 
           {/* Tweets */}
@@ -84,12 +83,6 @@ export const Home = () => {
           <RightSidebar />
         </div>
       </div>
-      
-      <AuthModals 
-        isOpen={authModal.isOpen} 
-        onClose={() => setAuthModal({ ...authModal, isOpen: false })} 
-        initialMode={authModal.mode} 
-      />
     </div>
   );
 };
